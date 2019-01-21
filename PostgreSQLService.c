@@ -16,6 +16,7 @@ void ControlHandler(DWORD request);
 int InitService();
 
 char str_log[512] = { 0 };
+char str_pg_log[512] = { 0 };
 
 BOOL AddUserToTokenDacl(HANDLE hToken);
 
@@ -38,11 +39,19 @@ int main() {
 	if (ptr_log == 0) {
 		return 1;
 	}
-	memcpy(ptr_log - 3, "log", 3);
 	memcpy(ptr_log + 1, "PostgreSQLService.log", strlen("PostgreSQLService.log") + 1);
+	memcpy(str_pg_log, str_log, 512);
+	ptr_log = strrchr(str_pg_log, '\\');
+	if (ptr_log == 0) {
+		return 1;
+	}
+	memcpy(ptr_log + 1, "PostgreSQL.log", strlen("PostgreSQL.log") + 1);
+
+	WriteToLog(str_log);
+	WriteToLog(str_pg_log);
 
 	SERVICE_TABLE_ENTRY ServiceTable[2];
-	ServiceTable[0].lpServiceName = L"Production Line PostgreSQL";
+	ServiceTable[0].lpServiceName = L"PostgreSQL Database Service";
 	ServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTION)ServiceMain;
 
 	ServiceTable[1].lpServiceName = NULL;
@@ -65,7 +74,7 @@ int ServiceMain(int argc, char **argv) {
 	ServiceStatus.dwCheckPoint = 0;
 	ServiceStatus.dwWaitHint = 0;
 
-	hStatus = RegisterServiceCtrlHandler(L"Production Line PostgreSQL", (LPHANDLER_FUNCTION)ControlHandler);
+	hStatus = RegisterServiceCtrlHandler(L"PostgreSQL Database Service", (LPHANDLER_FUNCTION)ControlHandler);
 	if (hStatus == (SERVICE_STATUS_HANDLE)0) {
 		// Registering Control Handler failed
 		return 1;
@@ -119,20 +128,16 @@ int InitService() {
 	char str_bin[256] = { 0 };
 	char str_cmdline[512] = "\"";
 	char str_cmdline1[512] = { 0 };
-	
-	if (GetModuleFileNameA(NULL, str_bin, 255) == 0) {
-		return 1;
+	LPSTR lpFilePart;
+
+	if (!SearchPath(NULL, "postgres", ".exe", MAX_PATH, str_bin, &lpFilePart)) {
+		WriteToLog("Could not find postgres.exe");
 	}
-	char *ptr_bin = strrchr(str_bin, '\\');
-	if (ptr_bin == 0) {
-		return 1;
-	}
-	memcpy(ptr_bin + 1, "postgres.exe", strlen("postgres.exe") + 1);
 	
 	WriteToLog(str_bin);
 
 	memcpy(str_cmdline + 1, str_bin, strlen(str_bin) + 1);
-	memcpy(str_cmdline + strlen(str_cmdline), "\" -D \"\\ProgramData", strlen("\" -D \"\\ProgramData") + 1);
+	memcpy(str_cmdline + strlen(str_cmdline), "\" -D \"", strlen("\" -D \"") + 1);
 	
 	if (GetModuleFileNameA(NULL, str_cmdline1, 255) == 0) {
 		return 1;
@@ -141,18 +146,33 @@ int InitService() {
 	if (ptr_cmdline == 0) {
 		return 1;
 	}
-	memcpy(ptr_cmdline - 4, "\\data\"", strlen("\\data\"") + 1);
-	ptr_cmdline = strstr(str_cmdline1, "Program Files");
-	ptr_cmdline = strstr(ptr_cmdline, "\\");
-	memcpy(str_cmdline + strlen(str_cmdline), ptr_cmdline, strlen(ptr_cmdline) + 1);
+	memcpy(ptr_cmdline, "\\data\"", strlen("\\data\"") + 1);
+	memcpy(str_cmdline + strlen(str_cmdline), str_cmdline1, strlen(str_cmdline1) + 1);
 	
 	WriteToLog(str_cmdline);
 
+	//FILE *logfile;
+	//logfile = fopen(str_log, "a+");
+	//if (logfile == NULL) {
+	//	return 1;
+	//}
+
 	ZeroMemory(&si, sizeof(si));
 	si.cb = sizeof(si);
-	//si.hStdError = GetStdHandle(STD_OUTPUT_HANDLE);
-	//si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-	//si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+	// couldn't figure this out, trying to open a log file for postgres
+	//fprintf(logfile, "GetLastError(): %p\n", GetLastError());
+	//si.hStdError = CreateFileA(str_pg_log, FILE_APPEND_DATA, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	//if (si.hStdError == INVALID_HANDLE_VALUE) {
+	//	fprintf(logfile, "si.hStdError == INVALID_HANDLE_VALUE\n");
+	//	fclose(logfile);
+	//	return 1;
+	//}
+	//fprintf(logfile, "str_pg_log: %s\n", str_pg_log);
+	//fprintf(logfile, "si.hStdError: %p\n", si.hStdError);
+	//fprintf(logfile, "GetLastError(): %p\n", GetLastError());
+	//fclose(logfile);
+
+	//si.hStdOutput = si.hStdError;
 	ZeroMemory(&pi, sizeof(pi));
 
 	WriteToLog("InitService()");

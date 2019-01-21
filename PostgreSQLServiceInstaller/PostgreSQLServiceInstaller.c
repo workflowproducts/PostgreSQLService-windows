@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	char *str_log_part = "\\log\\PostgreSQLServiceInstaller.log";
+	char *str_log_part = "\\PostgreSQLServiceInstaller.log";
 	char *str_log = NULL;
 
 	str_log = calloc(strlen(str_target_dir) + strlen(str_log_part), 1);
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (int_action == ACTION_INSTALL) {
-		char *str_binpath_part = "\\postgresql\\bin\\PostgreSQLService.exe";
+		char *str_binpath_part = "\\PostgreSQLService.exe";
 		char *str_binpath = NULL;
 
 		str_binpath = calloc(strlen(str_target_dir) + strlen(str_binpath_part), 1);
@@ -92,8 +92,8 @@ int main(int argc, char **argv) {
 		fprintf(log, "ACTION_INSTALL\n");
 		sc_service = CreateServiceA(
 			sc_manager,
-			"Production Line PostgreSQL",
-			"Production Line PostgreSQL",
+			"PostgreSQL Database Service",
+			"PostgreSQL Database Service",
 			SERVICE_ALL_ACCESS,
 			SERVICE_WIN32_OWN_PROCESS,
 			SERVICE_AUTO_START,
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
 	} else {
 		fprintf(log, "ACTION_UNINSTALL\n");
 		SERVICE_STATUS_PROCESS ssp;
-		sc_service = OpenServiceA(sc_manager, "Production Line PostgreSQL", SERVICE_ALL_ACCESS);
+		sc_service = OpenServiceA(sc_manager, "PostgreSQL Database Service", SERVICE_ALL_ACCESS);
 
 		if (sc_service == NULL) {
 			fprintf(log, "OpenServiceA failed: %d\n", GetLastError());
